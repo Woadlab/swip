@@ -75,7 +75,7 @@ final class ToolWindowManager: NSObject, NSWindowDelegate {
         }
     }
 
-    static func windowClass(for tool: ToolID) -> WindowClass {
+    nonisolated static func windowClass(for tool: ToolID) -> WindowClass {
         switch tool {
         case .compress, .resizeImage, .createPDF, .mergePDF, .splitPDF, .audioChannels, .rotateImage:
             return .compact
@@ -86,7 +86,7 @@ final class ToolWindowManager: NSObject, NSWindowDelegate {
         }
     }
 
-    static func preferredSize(for tool: ToolID) -> NSSize {
+    nonisolated static func preferredSize(for tool: ToolID) -> NSSize {
         switch tool {
         case .compress:
             return NSSize(width: 640, height: 560)
@@ -107,7 +107,7 @@ final class ToolWindowManager: NSObject, NSWindowDelegate {
         }
     }
 
-    static func minimumSize(for tool: ToolID) -> NSSize {
+    nonisolated static func minimumSize(for tool: ToolID) -> NSSize {
         switch windowClass(for: tool) {
         case .compact: return NSSize(width: 560, height: 360)
         case .standard: return NSSize(width: 640, height: 440)
@@ -199,6 +199,7 @@ struct WindowChrome<Content: View>: View {
     }
 }
 
+@MainActor
 struct ToolShell<Content: View, Sidebar: View>: View {
     let session: ToolSession
     var saveTitle = "Save copy"
@@ -380,6 +381,7 @@ extension ToolSession {
     }
 }
 
+@MainActor
 struct ExtractArchiveToolView: View {
     let session: ToolSession
 
