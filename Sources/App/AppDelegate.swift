@@ -11,11 +11,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
 
     private var cancellables: Set<AnyCancellable> = []
-    private var spinTimer: Timer?
-    private var spinAngle: CGFloat = 0
-    private var isSpinning = false
-    private var noticeTimer: Timer?
-    private var restoreTimer: Timer?
+    private var spinTask: Task<Void, Never>?
+    private var noticeTask: Task<Void, Never>?
+    private var restoreTask: Task<Void, Never>?
     private var previousJobID: UUID?
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
@@ -154,14 +152,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         JobRunner.shared.$activeJob
             .receive(on: DispatchQueue.main)
             .sink { [weak self] job in
-                self?.handleActiveJobChanged(job)
+                Task { @MainActor in
+                    self?.handleActiveJobChanged(job)
+                }
             }
             .store(in: &cancellables)
 
         JobRunner.shared.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.handleJobProgressUpdated()
+                Task { @MainActor in
+                    self?.handleJobProgressUpdated()
+                }
             }
             .store(in: &cancellables)
     }
@@ -173,19 +175,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // New job started
             if previousJobID != job.id {
                 previousJobID = job.id
-                restoreTimer?.invalidate()
-                restoreTimer = nil
+                restoreTask?.cancel()
+                restoreTask = nil
 
-                // Brief notice that retracts
+                // Brief notice that retracts smoothly
                 button.title = " Converting…"
                 button.imagePosition = .imageLeading
 
-                noticeTimer?.invalidate()
-                noticeTimer = Timer.scheduledTimer(withTimeInterval: 1.8, repeats: false) { [weak button] _ in
-                    Task { @MainActor in
-                        button?.title = ""
-                        button?.imagePosition = .imageOnly
-                    }
+                noticeTask?.cancel()
+                noticeTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_800_000_000)
+                    guard !Task.isCancelled else { return }
+                    button.title = ""
+                    button.imagePosition = .imageOnly
                 }
             }
 
@@ -195,8 +197,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // Active job finished
             let lastJob = JobRunner.shared.jobs.first
             previousJobID = nil
-            noticeTimer?.invalidate()
-            noticeTimer = nil
+            noticeTask?.cancel()
+            noticeTask = nil
             stopSpinning()
 
             if let last = lastJob {
@@ -223,11 +225,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
 
                 // Dwell briefly then return smoothly to normal minimal icon
-                restoreTimer?.invalidate()
-                restoreTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                    Task { @MainActor in
-                        self?.restoreStandardIcon()
-                    }
+                restoreTask?.cancel()
+                restoreTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    guard !Task.isCancelled else { return }
+                    self.restoreStandardIcon()
                 }
             } else {
                 restoreStandardIcon()
@@ -244,24 +246,22 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startSpinning() {
-        guard !isSpinning else { return }
-        isSpinning = true
-        spinTimer?.invalidate()
-        spinTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self, self.isSpinning, let button = self.statusItem?.button else { return }
-                self.spinAngle += (2 * .pi) / 30.0
-                if self.spinAngle >= 2 * .pi { self.spinAngle -= 2 * .pi }
-                button.image = BrandArtwork.image(size: 18, angle: self.spinAngle, template: true)
+        guard spinTask == nil else { return }
+        spinTask = Task { @MainActor in
+            var angle: CGFloat = 0
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 33_333_333) // ~30 fps
+                guard !Task.isCancelled, let button = self.statusItem?.button else { break }
+                angle += (2 * .pi) / 30.0
+                if angle >= 2 * .pi { angle -= 2 * .pi }
+                button.image = BrandArtwork.image(size: 18, angle: angle, template: true)
             }
         }
     }
 
     private func stopSpinning() {
-        isSpinning = false
-        spinTimer?.invalidate()
-        spinTimer = nil
-        spinAngle = 0
+        spinTask?.cancel()
+        spinTask = nil
     }
 
     private func restoreStandardIcon() {
