@@ -27,21 +27,25 @@ public enum SmokeTestRunner {
             }
         }
         
+        final class ResultBox: @unchecked Sendable {
+            var error: Error?
+        }
+        
         func testAsync(_ name: String, block: @escaping () async throws -> Void) {
             print("▶ Testing \(name)...", terminator: " ")
             fflush(stdout)
             let sema = DispatchSemaphore(value: 0)
-            var caughtError: Error?
+            let box = ResultBox()
             Task {
                 do {
                     try await block()
                 } catch {
-                    caughtError = error
+                    box.error = error
                 }
                 sema.signal()
             }
             sema.wait()
-            if let error = caughtError {
+            if let error = box.error {
                 print("[\u{001B}[31mFAIL\u{001B}[0m]: \(error)")
                 failed += 1
             } else {
