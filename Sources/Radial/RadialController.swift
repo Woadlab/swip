@@ -70,10 +70,14 @@ public final class RadialController: DragMonitorDelegate {
         self.panel = panel
 
         let view = panel.radialView
+        view.frame = NSRect(origin: .zero, size: screen.frame.size)
         view.interactive = pickerMode
         view.mode = mode
         let clamped = clampedCenter(point, in: screen.frame, radius: view.discRadius + 40)
-        view.centerPoint = NSPoint(x: clamped.x - screen.frame.minX, y: clamped.y - screen.frame.minY)
+        view.centerPoint = panel.convertPoint(fromScreen: clamped)
+        view.updateHostFrame()
+        view.needsLayout = true
+        view.layoutSubtreeIfNeeded()
         view.onSelect = { [weak self] item in self?.select(item) }
         view.onCancel = { [weak self] in self?.hide() }
         view.onDragEntered = { [weak self] info in self?.adoptDraggedFiles(from: info) }

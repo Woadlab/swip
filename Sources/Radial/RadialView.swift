@@ -272,6 +272,7 @@ public struct RadialWheelView: View {
         .frame(width: wheelDiameter, height: wheelDiameter)
         .scaleEffect(scale)
         .opacity(opacity)
+        .id(presentationID)
         .onAppear {
             guard animateEntrance else { return }
             if reduceMotion {
@@ -288,8 +289,16 @@ public struct RadialWheelView: View {
 }
 
 public final class RadialView: NSView {
-    public var centerPoint: NSPoint = .zero
-    public var discRadius: CGFloat = 175
+    public var centerPoint: NSPoint = .zero {
+        didSet {
+            updateHostFrame()
+        }
+    }
+    public var discRadius: CGFloat = 175 {
+        didSet {
+            updateHostFrame()
+        }
+    }
     public var interactive = false
     public var mode: RadialMode = .convert
     public var items: [RadialItem] = [] { didSet { refresh() } }
@@ -327,6 +336,7 @@ public final class RadialView: NSView {
         wantsLayer = true
         host.sizingOptions = []
         addSubview(host)
+        updateHostFrame()
     }
 
     required init?(coder: NSCoder) { fatalError("Not supported") }
@@ -334,14 +344,19 @@ public final class RadialView: NSView {
     public override var acceptsFirstResponder: Bool { true }
     public override var isFlipped: Bool { false }
 
-    public override func layout() {
-        super.layout()
+    public func updateHostFrame() {
         host.frame = NSRect(
             x: centerPoint.x - discRadius,
             y: centerPoint.y - discRadius,
             width: discRadius * 2,
             height: discRadius * 2
         )
+        needsLayout = true
+    }
+
+    public override func layout() {
+        super.layout()
+        updateHostFrame()
     }
 
     public override func hitTest(_ point: NSPoint) -> NSView? {
