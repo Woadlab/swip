@@ -61,4 +61,14 @@ echo "==> Code signing Swip.app..."
 codesign --force --sign - "$app"
 codesign --verify --deep --strict "$app"
 
-echo "==> Successfully built Swip.app at $app"
+echo "==> Packaging Swip.dmg and Swip.zip..."
+dmg_staging="$PWD/.build/dmg"
+rm -rf "$dmg_staging"
+mkdir -p "$dmg_staging"
+cp -R "$app" "$dmg_staging/"
+ln -s /Applications "$dmg_staging/Applications"
+rm -f "$PWD/dist/Swip.dmg" "$PWD/dist/Swip.zip"
+hdiutil create -volname "Swip" -srcfolder "$dmg_staging" -ov -format UDZO "$PWD/dist/Swip.dmg" >/dev/null
+(cd "$PWD/dist" && zip -q -r -y Swip.zip Swip.app)
+
+echo "==> Successfully built and packaged Swip.app, Swip.dmg, and Swip.zip in dist/"

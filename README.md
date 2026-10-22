@@ -27,15 +27,16 @@ Install Swip directly to `/Applications` with a single terminal command:
 curl -fsSL https://raw.githubusercontent.com/Woadlab/swip/main/install.sh | bash
 ```
 
-### Method 2: Direct Download (GitHub Releases)
+### Method 2: Direct Download (DMG)
 
-Download the latest pre-compiled build:
+Download the pre-compiled disk image from GitHub Releases:
 
-👉 **[Download Latest Swip Release (ZIP)](https://github.com/Woadlab/swip/releases/latest)**
+👉 **[Download Latest Swip (DMG)](https://github.com/Woadlab/swip/releases/latest)** *(or [Swip.zip](https://github.com/Woadlab/swip/releases/latest))*
 
-1. Unzip `Swip.zip`.
-2. Move `Swip.app` to your `/Applications` folder.
-3. Open `Swip` from Launchpad or Spotlight.
+1. Open `Swip.dmg` and drag `Swip` to your `/Applications` shortcut.
+2. Launch `Swip` from Spotlight or Launchpad.
+
+> *First launch note: If macOS Gatekeeper displays an unverified developer prompt, right-click (Control-click) `Swip.app` &rarr; **Open**, or click **Open Anyway** under System Settings &rarr; Privacy & Security.*
 
 ### Method 3: Homebrew Cask
 
