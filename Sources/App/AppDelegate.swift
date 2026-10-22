@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
@@ -9,6 +10,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var studioWindow: NSWindow?
     private var settingsWindow: NSWindow?
 
+    private var cancellables: Set<AnyCancellable> = []
+    private var spinTimer: Timer?
+    private var spinAngle: CGFloat = 0
+    private var isSpinning = false
+    private var noticeTimer: Timer?
+    private var restoreTimer: Timer?
+    private var previousJobID: UUID?
+
     public func applicationDidFinishLaunching(_ notification: Notification) {
         DiagnosticLog.start()
         NSApp.setActivationPolicy(.accessory)
@@ -16,6 +25,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.applicationIconImage = BrandArtwork.image(size: 256)
 
         installStatusItem()
+        observeBackgroundJobs()
 
         dragMonitor.delegate = radial
         dragMonitor.start()
@@ -137,5 +147,128 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             guard response == .OK, !panel.urls.isEmpty else { return }
             completion(panel.urls)
         }
+    }
+
+    // MARK: - Background Job Menubar Indicator
+    private func observeBackgroundJobs() {
+        JobRunner.shared.$activeJob
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] job in
+                self?.handleActiveJobChanged(job)
+            }
+            .store(in: &cancellables)
+
+        JobRunner.shared.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.handleJobProgressUpdated()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleActiveJobChanged(_ job: Job?) {
+        guard let button = statusItem?.button else { return }
+
+        if let job = job {
+            // New job started
+            if previousJobID != job.id {
+                previousJobID = job.id
+                restoreTimer?.invalidate()
+                restoreTimer = nil
+
+                // Brief notice that retracts
+                button.title = " Converting…"
+                button.imagePosition = .imageLeading
+
+                noticeTimer?.invalidate()
+                noticeTimer = Timer.scheduledTimer(withTimeInterval: 1.8, repeats: false) { [weak button] _ in
+                    Task { @MainActor in
+                        button?.title = ""
+                        button?.imagePosition = .imageOnly
+                    }
+                }
+            }
+
+            button.toolTip = "\(job.title): \(job.detail)"
+            startSpinning()
+        } else if previousJobID != nil {
+            // Active job finished
+            let lastJob = JobRunner.shared.jobs.first
+            previousJobID = nil
+            noticeTimer?.invalidate()
+            noticeTimer = nil
+            stopSpinning()
+
+            if let last = lastJob {
+                switch last.status {
+                case .done:
+                    let check = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "Done")
+                    check?.isTemplate = true
+                    button.image = check
+                    button.title = " Done"
+                    button.imagePosition = .imageLeading
+                    button.toolTip = "\(last.detail) converted successfully"
+
+                case .failed(let err):
+                    let warn = NSImage(systemSymbolName: "exclamationmark.circle.fill", accessibilityDescription: "Failed")
+                    warn?.isTemplate = true
+                    button.image = warn
+                    button.title = " Failed"
+                    button.imagePosition = .imageLeading
+                    button.toolTip = "Failed: \(err)"
+
+                default:
+                    restoreStandardIcon()
+                    return
+                }
+
+                // Dwell briefly then return smoothly to normal minimal icon
+                restoreTimer?.invalidate()
+                restoreTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                    Task { @MainActor in
+                        self?.restoreStandardIcon()
+                    }
+                }
+            } else {
+                restoreStandardIcon()
+            }
+        }
+    }
+
+    private func handleJobProgressUpdated() {
+        guard let job = JobRunner.shared.activeJob, let button = statusItem?.button else { return }
+        let pct = Int(job.progress * 100)
+        if pct > 0 && pct < 100 {
+            button.toolTip = "\(job.title): \(job.detail) (\(pct)%)"
+        }
+    }
+
+    private func startSpinning() {
+        guard !isSpinning else { return }
+        isSpinning = true
+        spinTimer?.invalidate()
+        spinTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self, self.isSpinning, let button = self.statusItem?.button else { return }
+                self.spinAngle += (2 * .pi) / 30.0
+                if self.spinAngle >= 2 * .pi { self.spinAngle -= 2 * .pi }
+                button.image = BrandArtwork.image(size: 18, angle: self.spinAngle, template: true)
+            }
+        }
+    }
+
+    private func stopSpinning() {
+        isSpinning = false
+        spinTimer?.invalidate()
+        spinTimer = nil
+        spinAngle = 0
+    }
+
+    private func restoreStandardIcon() {
+        guard let button = statusItem?.button else { return }
+        button.title = ""
+        button.imagePosition = .imageOnly
+        button.image = BrandArtwork.image(size: 18, template: true)
+        button.toolTip = "Swip: Hold Shift while dragging a file to convert"
     }
 }

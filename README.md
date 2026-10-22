@@ -11,6 +11,12 @@
 
 ---
 
+<p align="center">
+  <img src="Assets/demo.gif" alt="Swip macOS Zero-Click Demo" width="100%" />
+</p>
+
+---
+
 Converting an image to WebP, trimming a video clip, normalizing audio loudness, or stripping GPS coordinates from photos shouldn't require opening a browser, uploading private files to third-party cloud servers, or wrestling with bloated multi-gigabyte suites.
 
 **Swip** turns everyday media tasks into a physical reflex on macOS. Pick up any file from Finder, hold a modifier key, and drop it onto an 8-petal radial HUD. The converted file or processed asset appears instantly right next to the original.
@@ -77,7 +83,7 @@ Swip runs as a lightweight, non-activating status bar utility that monitors glob
 - **Physical Gesture HUD**: A non-activating floating radial panel appears under your cursor when dragging files. Releasing the file triggers the action immediately without stealing window focus.
 - **275+ Offline Conversion Pairs**: Instant transcoding across raster graphics, vectors, video containers, lossless audio, documents, archives, and subtitle formats.
 - **26 Pro Media Tools**: Complete offline toolset for trimming, cropping, frame extraction, canvas framing, redaction, loudness normalization, PDF manipulation, and deep metadata editing.
-- **Hardware Accelerated**: Native Swift 5 pipeline backed by Apple Silicon Accelerate, `vImage`, `ImageIO`, `AVFoundation`, `CoreGraphics`, and embedded `FFmpeg`.
+- **Hardware Accelerated & 100% Native**: Built on Apple Silicon Accelerate, `vImage`, `ImageIO`, `AVFoundation`, and `CoreGraphics` for sub-second offline processing, with seamless integration for system FFmpeg when available.
 - **Swip Studio & Floating Shelf**: Dedicated utility window for batch processing, format inspection, and an edge-docked shelf for staging files across multi-monitor setups.
 - **Calibrated macOS Aesthetic**: Frosted glass HUD with dynamic theme accents (Pastel Indigo default, Pastel Mint, Pastel Rose, or System Accent).
 

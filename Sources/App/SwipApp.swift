@@ -19,7 +19,7 @@ public enum SwipMain {
         }
         
         if args.contains("--version") || args.contains("-v") {
-            print("Swip 1.0.1 (Apple Silicon, 100% Local macOS File Utility)")
+            print("Swip 1.0.2 (Apple Silicon, 100% Local macOS File Utility)")
             exit(0)
         }
         

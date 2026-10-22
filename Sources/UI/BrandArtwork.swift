@@ -1,10 +1,17 @@
 import AppKit
 
 public enum BrandArtwork {
-    public static func image(size: CGFloat, template: Bool = false) -> NSImage {
+    public static func image(size: CGFloat, angle: CGFloat = 0, template: Bool = false) -> NSImage {
         let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
             let s = rect.width
             let ctx = NSGraphicsContext.current?.cgContext
+
+            if angle != 0 {
+                ctx?.saveGState()
+                ctx?.translateBy(x: s * 0.5, y: s * 0.5)
+                ctx?.rotate(by: angle)
+                ctx?.translateBy(x: -s * 0.5, y: -s * 0.5)
+            }
 
             if !template {
                 // Background dark gradient squircle
@@ -77,6 +84,9 @@ public enum BrandArtwork {
                 // Center core
                 let dotRect = NSRect(x: s * 0.41, y: s * 0.41, width: s * 0.18, height: s * 0.18)
                 NSBezierPath(ovalIn: dotRect).fill()
+            }
+            if angle != 0 {
+                ctx?.restoreGState()
             }
             return true
         }

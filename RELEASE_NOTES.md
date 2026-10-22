@@ -1,12 +1,23 @@
-### Swip 1.0.1 — Radial Drag Alignment & Menu Bar Isolation
+### Swip 1.0.2 — Cardinal Muscle Memory, Menu Bar Status & Native Polish
 
-This update resolves critical cursor tracking issues during Finder drag gestures and eliminates false radial HUD triggers when interacting with macOS system status items.
+This update introduces fixed cardinal petal positioning for rock-solid muscle memory, live animated conversion status in the macOS menu bar, and verified 100% native Apple Silicon hardware acceleration.
 
-### 🐛 Bug Fixes & Improvements
+### ✨ What's New
 
-- **Finder List & Column View Drag Alignment**: Fixed an issue where dragging files starting from the tail of their name in Finder list or column view caused the radial wheel to appear misaligned visually while hit-testing operated at the drag start. `RadialView` and `RadialController` now dynamically synchronize `host.frame` with the cursor position on every drag.
-- **Menu Bar & System Interaction Isolation**: Excluded the macOS status bar area (`pressOrigin.y >= screen.visibleFrame.maxY`) and eliminated false-positive drag activations when rearranging menu bar items (`⌘ Command + Drag`), moving background windows, or selecting text.
-- **Strict Drag Session Verification**: The radial engine now strictly requires an active, newly initiated file drag session (`changeCount > pressChangeCount`) with verified file URLs before activating.
+- **Cardinal Muscle Memory**: Format petals now adhere to deterministic compass positions across all media categories. Dragging an image reliably places WebP at North, PNG at North-East, JPG at East, and PDF at South-East, completely preventing index shifting across different input formats.
+- **Live Menu Bar Conversion Status**: Long-running background conversions now display a discreet, non-intrusive status in the macOS menu bar:
+  - An animated notice appears upon starting, smoothly retracting to a minimal icon.
+  - The Swip icon spins smoothly with a fixed center during active processing.
+  - Morphs into a success checkmark (`checkmark.circle.fill`) for 2 seconds on completion before restoring the standard icon.
+- **100% Native Architecture & Pure MIT**: Confirmed zero bundled GPL/FFmpeg binary bloat. All standard conversions leverage Apple Silicon hardware acceleration (`vImage`, `ImageIO`, `AVFoundation`, `CoreGraphics`, `PDFKit`), maintaining an ultra-lightweight 2.8 MB footprint.
+- **Refined Assets & Documentation**: Added photorealistic macOS desktop demonstrations and updated technical specifications.
+
+---
+
+### 🐛 Bug Fixes & Refinements (from 1.0.1)
+
+- **Finder List & Column View Drag Alignment**: Corrected radial HUD origin synchronization when initiating drags from file name labels.
+- **Status Bar Drag Isolation**: Prevented accidental radial activations during menu bar icon rearrangement (`⌘ + Drag`) and system gestures.
 
 ---
 
@@ -17,7 +28,7 @@ This update resolves critical cursor tracking issues during Finder drag gestures
   - `⌘ Command + Drag`: 26 pro media tools (Lossless Trim, Redaction brush, Canvas framing, Loudness normalization, PDF merge/split, Metadata scrubbing).
   - `⌃ Control + Drag`: Quick actions (Reveal, Quick Look, Trash, Stash to Shelf).
 - **100% Local & Private**: Runs entirely offline on your Mac. Zero network requests, zero telemetry, zero cloud dependencies.
-- **Hardware Accelerated**: Native Swift 5 / SwiftUI pipeline backed by `vImage`, `ImageIO`, `AVFoundation`, `CoreGraphics`, and embedded `FFmpeg`.
+- **Hardware Accelerated & 100% Native**: Built on Apple Silicon Accelerate, `vImage`, `ImageIO`, `AVFoundation`, and `CoreGraphics` for sub-second offline processing, with seamless integration for system FFmpeg when available.
 - **Swip Studio & Floating Shelf**: Dedicated utility window for batch conversions, format inspection, and an edge-docked shelf for staging files.
 
 ---
