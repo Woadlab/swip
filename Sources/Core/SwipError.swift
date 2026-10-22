@@ -1,0 +1,38 @@
+import Foundation
+
+public enum SwipError: LocalizedError, CustomStringConvertible {
+    case unsupportedConversion(FileFormat, FileFormat)
+    case unreadable(URL)
+    case encodeFailed(String)
+    case ffmpegMissing(String)
+    case toolFailed(String, String)
+    case cancelled
+    case invalidInput(String)
+    case executionFailed(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .unsupportedConversion(from, to):
+            return "Converting \(from.displayName) to \(to.displayName) is not supported."
+        case let .unreadable(url):
+            return "Could not read \(url.lastPathComponent)."
+        case let .encodeFailed(what):
+            return "Could not write \(what)."
+        case let .ffmpegMissing(what):
+            return "\(what) needs ffmpeg. Install it (for example with `brew install ffmpeg`) or verify its location in Settings."
+        case let .toolFailed(tool, output):
+            return "\(tool) failed: \(output.trimmingCharacters(in: .whitespacesAndNewlines))"
+        case .cancelled:
+            return "Cancelled."
+        case let .invalidInput(reason):
+            return reason
+        case let .executionFailed(detail):
+            return detail
+        }
+    }
+
+    public var description: String {
+        errorDescription ?? "Unknown error"
+    }
+}
+
