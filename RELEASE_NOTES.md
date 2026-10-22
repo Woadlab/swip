@@ -1,6 +1,14 @@
-### Welcome to Swip 1.0.0
+### Swip 1.0.1 — Radial Drag Alignment & Menu Bar Isolation
 
-Swip is a zero-click, local-first drag-and-drop utility for macOS. It turns everyday media conversions and editing tasks into a physical reflex using an 8-petal radial HUD.
+This update resolves critical cursor tracking issues during Finder drag gestures and eliminates false radial HUD triggers when interacting with macOS system status items.
+
+### 🐛 Bug Fixes & Improvements
+
+- **Finder List & Column View Drag Alignment**: Fixed an issue where dragging files starting from the tail of their name in Finder list or column view caused the radial wheel to appear misaligned visually while hit-testing operated at the drag start. `RadialView` and `RadialController` now dynamically synchronize `host.frame` with the cursor position on every drag.
+- **Menu Bar & System Interaction Isolation**: Excluded the macOS status bar area (`pressOrigin.y >= screen.visibleFrame.maxY`) and eliminated false-positive drag activations when rearranging menu bar items (`⌘ Command + Drag`), moving background windows, or selecting text.
+- **Strict Drag Session Verification**: The radial engine now strictly requires an active, newly initiated file drag session (`changeCount > pressChangeCount`) with verified file URLs before activating.
+
+---
 
 ### ✨ Highlights
 
