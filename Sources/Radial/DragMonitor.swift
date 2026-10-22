@@ -109,6 +109,13 @@ public final class DragMonitor {
         return nil
     }
 
+    private var isMenuBarPress: Bool {
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(pressOrigin, $0.frame, false) }) else {
+            return false
+        }
+        return pressOrigin.y >= screen.visibleFrame.maxY
+    }
+
     private func beginPressIfNeeded() {
         guard !mouseDown else { return }
         mouseDown = true
@@ -120,7 +127,7 @@ public final class DragMonitor {
         pressTime = Date()
         let sourceApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         pressInFinder = sourceApp == "com.apple.finder"
-        pressExcluded = sourceApp.map { AppSettings.shared.excludedApplications[$0] != nil } ?? false
+        pressExcluded = isMenuBarPress || (sourceApp.map { AppSettings.shared.excludedApplications[$0] != nil } ?? false)
         pressChangeCount = NSPasteboard(name: .drag).changeCount
         lastReadChange = -1
         activity = ProcessInfo.processInfo.beginActivity(
@@ -143,13 +150,16 @@ public final class DragMonitor {
         let dist = hypot(NSEvent.mouseLocation.x - pressOrigin.x, NSEvent.mouseLocation.y - pressOrigin.y)
         if !dragInFlight, dist >= 5 {
             let pasteboard = NSPasteboard(name: .drag)
-            let types = pasteboard.types ?? []
-            let hasFiles = types.contains(.fileURL) || types.contains(where: {
-                NSFilePromiseReceiver.readableDraggedTypes.contains($0.rawValue) ||
-                $0.rawValue == "com.apple.finder.node"
-            })
-            if hasFiles || pasteboard.changeCount > pressChangeCount || activeModifierMode != nil {
-                dragInFlight = true
+            let isNewDrag = pasteboard.changeCount > pressChangeCount
+            if isNewDrag {
+                let types = pasteboard.types ?? []
+                let hasFiles = types.contains(.fileURL) || types.contains(where: {
+                    NSFilePromiseReceiver.readableDraggedTypes.contains($0.rawValue) ||
+                    $0.rawValue == "com.apple.finder.node"
+                })
+                if hasFiles || !activeURLs.isEmpty {
+                    dragInFlight = true
+                }
             }
         }
 
@@ -159,7 +169,9 @@ public final class DragMonitor {
     private func refreshDragPasteboard() {
         let pasteboard = NSPasteboard(name: .drag)
         let change = pasteboard.changeCount
-        // Keep inspecting if changeCount incremented OR if we are dragging but haven't captured files yet
+        // Only inspect if a new drag session has actually started since mouse down
+        guard change > pressChangeCount else { return }
+
         if change != lastReadChange || activeURLs.isEmpty {
             lastReadChange = change
             let urls = Self.fileURLs(on: pasteboard)
@@ -175,7 +187,7 @@ public final class DragMonitor {
                     NSFilePromiseReceiver.readableDraggedTypes.contains($0.rawValue) ||
                     $0.rawValue == "com.apple.finder.node"
                 })
-                if hasFileTypes || change > pressChangeCount {
+                if hasFileTypes {
                     dragInFlight = true
                 }
             }
