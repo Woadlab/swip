@@ -1,3 +1,20 @@
+### Swip 1.1.0 — Menu Bar Panel, Single Instance & Studio Refinements
+
+This release replaces the menu bar's plain menu with a dedicated panel that shows live job state, guarantees a single running copy of Swip per session, and refines Swip Studio and the media tools.
+
+### ✨ What's New
+
+- **Menu Bar Panel**: Clicking the menu bar icon opens a compact, non-activating panel anchored under the status item, replacing the stock menu. It offers Studio, Settings, convert, tools, file actions, the shelf, logs and quit, and shows live job state. Every action dismisses the panel first, like a real menu.
+- **Single Instance Guard**: Only one Swip runs per session, even if an installed copy and a development build are both launched (for example as login items). An installed copy in `/Applications` takes precedence over a development build; otherwise the older process wins. The other instance quits automatically.
+- **Refined Swip Studio**: Reworked layout and controls in Swip Studio, plus updated image, audio and video tool views.
+
+### 🐛 Fixes & Refinements
+
+- **Open at Login**: The "Open at login" setting is available only in an installed copy, so a development build can't register itself as a login item.
+- **Smaller Fixes**: Minor corrections in the export engine, the shared media player and theme tokens.
+
+---
+
 ### Swip 1.0.2 — Cardinal Muscle Memory, Menu Bar Status & Native Polish
 
 This update introduces fixed cardinal petal positioning for rock-solid muscle memory, live animated conversion status in the macOS menu bar, and verified 100% native Apple Silicon hardware acceleration.
