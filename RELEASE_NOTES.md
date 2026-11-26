@@ -1,3 +1,12 @@
+### Swip 1.1.1 — New Icon & Installer
+
+A fresh identity and a proper installer, on top of everything new in 1.1.0.
+
+- **New App Icon**: The mark is now the 8-petal radial wheel itself, frozen mid-gesture, with the selected petal popping outward just like in the HUD. It follows the macOS icon grid, and the menu bar icon and the menu bar panel use the same shape.
+- **Redesigned Installer**: The DMG opens to a designed window: drag Swip onto Applications, guided by an arrow and the wheel around the app icon.
+
+---
+
 ### Swip 1.1.0 — Menu Bar Panel, Single Instance & Studio Refinements
 
 This release replaces the menu bar's plain menu with a dedicated panel that shows live job state, guarantees a single running copy of Swip per session, and refines Swip Studio and the media tools.

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Assets/icon.png" alt="Swip icon" width="128" />
+</p>
+
 # Swip
 
 > **Zero-click, local-first drag-and-drop Swiss Army knife for macOS.**  

@@ -6,6 +6,8 @@ app="$PWD/dist/Swip.app"
 module_cache="$PWD/.build/module-cache"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$PWD/.build" "$module_cache"
 
+VERSION="1.1.1"
+BUILD_NUMBER="5"
 MIN_MACOS="14.0"
 arch="$(uname -m)"
 binary="$PWD/.build/Swip-$arch"
@@ -39,11 +41,11 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.0</string>
+    <string>$VERSION</string>
     <key>CFBundleVersion</key>
-    <string>4</string>
+    <string>$BUILD_NUMBER</string>
     <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
+    <string>$MIN_MACOS</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>
@@ -61,14 +63,24 @@ echo "==> Code signing Swip.app..."
 codesign --force --sign - "$app"
 codesign --verify --deep --strict "$app"
 
+echo "==> Rendering DMG background..."
+xcrun swiftc -parse-as-library Sources/UI/BrandArtwork.swift scripts/make-dmg-background.swift -o .build/make-dmg-background
+.build/make-dmg-background "$PWD/.build/dmg-bg" "$VERSION"
+
 echo "==> Packaging Swip.dmg and Swip.zip..."
-dmg_staging="$PWD/.build/dmg"
-rm -rf "$dmg_staging"
-mkdir -p "$dmg_staging"
-cp -R "$app" "$dmg_staging/"
-ln -s /Applications "$dmg_staging/Applications"
 rm -f "$PWD/dist/Swip.dmg" "$PWD/dist/Swip.zip"
-hdiutil create -volname "Swip" -srcfolder "$dmg_staging" -ov -format UDZO "$PWD/dist/Swip.dmg"
-(cd "$PWD/dist" && zip -q -r -y Swip.zip Swip.app)
+
+# dmgbuild writes the Finder window layout (background, icon positions, hidden
+# toolbar) straight into .DS_Store, so it needs no GUI session and works in CI.
+dmgenv="$PWD/.build/dmgenv"
+if [[ ! -x "$dmgenv/bin/dmgbuild" ]]; then
+  python3 -m venv "$dmgenv"
+  "$dmgenv/bin/pip" install --quiet --disable-pip-version-check "dmgbuild==2.0.0"
+fi
+"$dmgenv/bin/dmgbuild" -s scripts/dmg-settings.py \
+  -D app="$app" -D background="$PWD/.build/dmg-bg/background.png" \
+  "Swip" "$PWD/dist/Swip.dmg"
+
+(cd "$PWD/dist" && ditto -c -k --keepParent Swip.app Swip.zip)
 
 echo "==> Successfully built and packaged Swip.app, Swip.dmg, and Swip.zip in dist/"

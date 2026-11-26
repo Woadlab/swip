@@ -476,26 +476,31 @@ struct SwipMark: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: s * 0.27, style: .continuous)
                         .fill(LinearGradient(
-                            colors: [Color(red: 0.13, green: 0.15, blue: 0.23), Color(red: 0.04, green: 0.05, blue: 0.08)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
+                            colors: [Color(red: 0.17, green: 0.18, blue: 0.29), Color(red: 0.06, green: 0.065, blue: 0.11)],
+                            startPoint: .top, endPoint: .bottom
                         ))
                     RoundedRectangle(cornerRadius: s * 0.27, style: .continuous)
-                        .strokeBorder(Theme.accent.opacity(0.45), lineWidth: 0.75)
+                        .strokeBorder(.white.opacity(0.12), lineWidth: 0.5)
 
-                    ZStack {
-                        Circle()
-                            .trim(from: 0.10, to: 0.45)
-                            .stroke(Theme.accent, style: StrokeStyle(lineWidth: s * 0.085, lineCap: .round))
-                        Circle()
-                            .trim(from: 0.60, to: 0.95)
-                            .stroke(Color(red: 0.82, green: 0.86, blue: 0.94), style: StrokeStyle(lineWidth: s * 0.085, lineCap: .round))
+                    // Same petals as the app icon (BrandArtwork.petal), drawn live so
+                    // the wheel can turn and follow the user's accent color.
+                    Canvas { ctx, size in
+                        let spec = BrandArtwork.WheelSpec.tile
+                        let c = CGPoint(x: size.width / 2, y: size.height / 2)
+                        let slot = CGFloat.pi * 2 / 8
+                        for i in 0..<8 {
+                            // y-down canvas: negative angles run counter-clockwise, so
+                            // index 1 lands at the north-east like the app icon.
+                            let path = Path(BrandArtwork.petal(center: c, angle: -CGFloat(i) * slot, spec: spec,
+                                                               size: size.width, popped: i == 1))
+                            ctx.fill(path, with: .color(i == 1 ? Theme.accent : Color(red: 0.84, green: 0.87, blue: 0.95).opacity(0.22)))
+                        }
                     }
-                    .padding(s * 0.24)
                     .rotationEffect(spin)
 
                     Circle()
                         .fill(.white)
-                        .frame(width: s * 0.17, height: s * 0.17)
+                        .frame(width: s * BrandArtwork.WheelSpec.tile.dot * 2, height: s * BrandArtwork.WheelSpec.tile.dot * 2)
                 }
             }
         }
