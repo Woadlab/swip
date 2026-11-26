@@ -2,8 +2,10 @@ import AppKit
 import SwiftUI
 
 enum Theme {
-    static var accentNS: NSColor {
-        switch AppSettings.shared.accentTheme {
+    static var accentNS: NSColor { accentNS(for: AppSettings.shared.accentTheme) }
+
+    static func accentNS(for theme: AccentTheme) -> NSColor {
+        switch theme {
         case .pastelIndigo:
             return NSColor(srgbRed: 0.44, green: 0.48, blue: 0.96, alpha: 1.0)
         case .pastelMint:

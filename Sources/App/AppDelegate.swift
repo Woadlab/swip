@@ -8,7 +8,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private let dragMonitor = DragMonitor()
     private let radial = RadialController()
     private var studioWindow: NSWindow?
-    private var settingsWindow: NSWindow?
+    private var menuPanel: MenuBarPanelController?
 
     private var cancellables: Set<AnyCancellable> = []
     private var spinTask: Task<Void, Never>?
@@ -18,6 +18,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         DiagnosticLog.start()
+
+        // Never run twice (e.g. /Applications copy + a dev build both at login).
+        guard InstanceGuard.resolve() else {
+            NSApp.terminate(nil)
+            return
+        }
+        // Copies launched in the same instant may not see each other yet.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            if !InstanceGuard.resolve() { NSApp.terminate(nil) }
+        }
+        AppSettings.shared.syncLoginItemFromSystem()
+
         NSApp.setActivationPolicy(.accessory)
         AppSettings.shared.applyAppearance()
         NSApp.applicationIconImage = BrandArtwork.image(size: 256)
@@ -33,6 +45,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
             openStudio()
         }
+
+        if CommandLine.arguments.contains("--show-menu") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.menuPanel?.show() }
+        }
+    }
+
+    /// Double-clicking Swip in Finder while it is already running opens the Studio.
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { openStudio() }
+        return true
     }
 
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -45,57 +67,51 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = item.button {
-            button.image = BrandArtwork.image(size: 18, template: true)
-            button.imagePosition = .imageOnly
-            button.toolTip = "Swip: Hold Shift while dragging a file to convert"
-        }
+        guard let button = item.button else { return }
+        button.image = BrandArtwork.image(size: 18, template: true)
+        button.imagePosition = .imageOnly
+        button.toolTip = "Swip: Hold Shift while dragging a file to convert"
+        button.target = self
+        button.action = #selector(statusItemClicked)
+        button.sendAction(on: [.leftMouseDown, .rightMouseDown])
 
-        let menu = NSMenu()
-        menu.addItem(withTitle: "Open Swip Studio", action: #selector(openStudio), keyEquivalent: "o").target = self
-        menu.addItem(withTitle: "Convert Files…", action: #selector(convertFiles), keyEquivalent: "k").target = self
-        menu.addItem(withTitle: "File Tools…", action: #selector(openTool), keyEquivalent: "t").target = self
-        menu.addItem(withTitle: "File Actions…", action: #selector(fileActions), keyEquivalent: "a").target = self
-        menu.addItem(withTitle: "Floating Shelf", action: #selector(toggleFloatingShelf), keyEquivalent: "f").target = self
-
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
-        menu.addItem(withTitle: "Show Diagnostic Logs", action: #selector(showLogs), keyEquivalent: "l").target = self
-
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit Swip", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-
-        let icons = [
-            "Open Swip Studio": "sparkles",
-            "Convert Files…": "arrow.triangle.2.circlepath",
-            "File Tools…": "wrench.and.screwdriver",
-            "File Actions…": "doc.on.doc",
-            "Floating Shelf": "pin.fill",
-            "Settings…": "gearshape",
-            "Show Diagnostic Logs": "doc.text.magnifyingglass",
-            "Quit Swip": "power"
-        ]
-        for item in menu.items {
-            if let symbol = icons[item.title] {
-                item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: item.title)
-            }
-        }
-
-        item.menu = menu
+        menuPanel = MenuBarPanelController(button: button, actions: MenuBarActions(
+            openStudio: { [weak self] in self?.openStudio() },
+            openSettings: { [weak self] in self?.openSettings() },
+            convert: { [weak self] in self?.convertFiles() },
+            tools: { [weak self] in self?.openTool() },
+            fileActions: { [weak self] in self?.fileActions() },
+            toggleShelf: { [weak self] in self?.toggleFloatingShelf() },
+            showLogs: { [weak self] in self?.showLogs() },
+            quit: { NSApp.terminate(nil) }
+        ))
         self.statusItem = item
     }
 
+    @objc private func statusItemClicked() {
+        menuPanel?.toggle()
+    }
+
     @objc public func openStudio() {
+        presentStudio(tab: nil)
+    }
+
+    private func presentStudio(tab: SwipStudioView.StudioTab?) {
+        if let tab { StudioRouter.shared.tab = tab }
         if studioWindow == nil {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 880, height: 580),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
             window.title = "Swip Studio"
+            window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
+            window.isMovableByWindowBackground = true
+            window.isReleasedWhenClosed = false
             window.center()
+            window.setFrameAutosaveName("SwipStudio")
             window.contentView = NSHostingView(rootView: SwipStudioView())
             self.studioWindow = window
         }
@@ -126,7 +142,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc public func openSettings() {
-        openStudio()
+        presentStudio(tab: .settings)
     }
 
     @objc public func showLogs() {

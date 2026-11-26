@@ -22,12 +22,14 @@ final class MediaController: ObservableObject {
         player = AVPlayer(url: url)
         player.actionAtItemEnd = .pause
         observer = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 30), queue: .main) { [weak self] time in
-            guard let self else { return }
-            self.currentTime = CMTimeGetSeconds(time)
-            self.isPlaying = self.player.rate != 0
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.currentTime = CMTimeGetSeconds(time)
+                self.isPlaying = self.player.rate != 0
+            }
         }
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { [weak self] _ in
-            self?.isPlaying = false
+            MainActor.assumeIsolated { self?.isPlaying = false }
         }
         Task {
             let info = await MediaInfo.load(url)
@@ -90,11 +92,13 @@ final class MediaController: ObservableObject {
         let boundary = CMTime(seconds: end, preferredTimescale: 600)
         if let boundaryObserver { player.removeTimeObserver(boundaryObserver) }
         boundaryObserver = player.addBoundaryTimeObserver(forTimes: [NSValue(time: boundary)], queue: .main) { [weak self] in
-            guard let self else { return }
-            self.pause()
-            if let token = self.boundaryObserver {
-                self.player.removeTimeObserver(token)
-                self.boundaryObserver = nil
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.pause()
+                if let token = self.boundaryObserver {
+                    self.player.removeTimeObserver(token)
+                    self.boundaryObserver = nil
+                }
             }
         }
     }

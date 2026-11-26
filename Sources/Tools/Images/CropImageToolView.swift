@@ -57,16 +57,16 @@ struct CropImageToolView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .onChange(of: rects) { new in
+        .onChange(of: rects) { _, new in
             guard let rect = new.first?.rect else { return }
             let w = Int(rect.width.rounded()), h = Int(rect.height.rounded())
             if w != width { width = w }
             if h != height { height = h }
         }
-        .onChange(of: width) { _ in applyDimensions() }
-        .onChange(of: height) { _ in applyDimensions() }
-        .onChange(of: aspect) { _ in applyAspect() }
-        .onChange(of: document.preview) { _ in
+        .onChange(of: width) { applyDimensions() }
+        .onChange(of: height) { applyDimensions() }
+        .onChange(of: aspect) { applyAspect() }
+        .onChange(of: document.preview) {
             if rects.isEmpty { setCrop(CGRect(origin: .zero, size: document.size).insetBy(dx: document.size.width * 0.1, dy: document.size.height * 0.1)) }
         }
     }

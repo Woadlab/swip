@@ -5,6 +5,7 @@ public final class FloatingShelfController: ObservableObject {
     public static let shared = FloatingShelfController()
 
     @Published public private(set) var items: [URL] = []
+    @Published public private(set) var isVisible = false
     private var window: NSPanel?
 
     private init() {}
@@ -37,11 +38,13 @@ public final class FloatingShelfController: ObservableObject {
             createWindow()
         }
         window?.orderFrontRegardless()
+        isVisible = window != nil
     }
 
     @MainActor
     public func hide() {
         window?.orderOut(nil)
+        isVisible = false
     }
 
     @MainActor
@@ -51,6 +54,10 @@ public final class FloatingShelfController: ObservableObject {
         } else {
             show()
         }
+    }
+
+    @objc private func shelfWillClose(_ note: Notification) {
+        isVisible = false
     }
 
     @MainActor
@@ -78,6 +85,8 @@ public final class FloatingShelfController: ObservableObject {
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
         panel.backgroundColor = .clear
+        panel.isReleasedWhenClosed = false
+        NotificationCenter.default.addObserver(self, selector: #selector(shelfWillClose), name: NSWindow.willCloseNotification, object: panel)
 
         let view = FloatingShelfView()
         panel.contentView = NSHostingView(rootView: view)

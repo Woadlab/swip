@@ -123,7 +123,7 @@ struct CreatePDFToolView: View {
             }
         }
         .onAppear { thumbs.load(files) }
-        .onChange(of: files) { thumbs.load($0) }
+        .onChange(of: files) { _, new in thumbs.load(new) }
     }
 
     private func save() {
@@ -210,14 +210,14 @@ struct CollageToolView: View {
             }
         }
         .onAppear { thumbs.load(files, maxPixels: 600); render() }
-        .onChange(of: files) { thumbs.load($0, maxPixels: 600); render() }
-        .onChange(of: thumbs.images.count) { _ in render() }
-        .onChange(of: layout) { _ in render() }
-        .onChange(of: width) { _ in render() }
-        .onChange(of: height) { _ in render() }
-        .onChange(of: spacing) { _ in render() }
-        .onChange(of: corner) { _ in render() }
-        .onChange(of: background) { _ in render() }
+        .onChange(of: files) { _, new in thumbs.load(new, maxPixels: 600); render() }
+        .onChange(of: thumbs.images.count) { render() }
+        .onChange(of: layout) { render() }
+        .onChange(of: width) { render() }
+        .onChange(of: height) { render() }
+        .onChange(of: spacing) { render() }
+        .onChange(of: corner) { render() }
+        .onChange(of: background) { render() }
     }
 
     private func render() {

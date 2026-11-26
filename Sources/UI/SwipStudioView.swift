@@ -1,10 +1,21 @@
 import AppKit
 import SwiftUI
 
+/// Lets the menu bar panel open the Studio on a specific tab.
+public final class StudioRouter: ObservableObject {
+    public static let shared = StudioRouter()
+    @Published public var tab: SwipStudioView.StudioTab = .convert
+    private init() {}
+}
+
 public struct SwipStudioView: View {
     @ObservedObject var jobRunner = JobRunner.shared
     @ObservedObject var settings = AppSettings.shared
-    @SwipState private var selectedTab: StudioTab = .convert
+    @ObservedObject private var router = StudioRouter.shared
+    private var selectedTab: StudioTab {
+        get { router.tab }
+        nonmutating set { router.tab = newValue }
+    }
     @SwipState private var droppedURLs: [URL] = []
     @SwipState private var selectedTargetFormat: FileFormat?
     @SwipState private var isDropTargeted = false
@@ -30,90 +41,133 @@ public struct SwipStudioView: View {
 
     public init() {}
 
+    /// Height reserved for the transparent title bar (traffic lights).
+    private static let titlebarInset: CGFloat = 40
+
     public var body: some View {
-        NavigationSplitView {
-            // Sidebar
-            VStack(alignment: .leading, spacing: 6) {
-                // Brand Header
-                HStack(spacing: 10) {
-                    Image(nsImage: BrandArtwork.image(size: 32))
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Swip")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                        Text("Offline File Converter")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
+        HStack(spacing: 0) {
+            sidebar
+                .frame(width: 236)
+                .frame(maxHeight: .infinity)
+                .background(VisualEffectBackdrop(material: .sidebar))
 
-                // Navigation Items
-                ForEach(StudioTab.allCases) { tab in
-                    Button(action: { selectedTab = tab }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: tab.symbol)
-                                .font(.system(size: 14))
-                                .frame(width: 20)
-                            Text(tab.rawValue)
-                                .font(.system(size: 13, weight: selectedTab == tab ? .semibold : .regular))
-                            Spacer()
-                            if tab == .history && !jobRunner.jobs.isEmpty {
-                                Text("\(jobRunner.jobs.count)")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Theme.accent.opacity(0.18), in: Capsule())
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(selectedTab == tab ? Theme.accent.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-                        .foregroundStyle(selectedTab == tab ? Theme.accent : Color.primary)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 8)
-                }
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(width: 0.5)
 
-                Spacer()
-
-                // Privacy Indicator
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.shield.fill")
-                            .foregroundStyle(.green)
-                            .font(.system(size: 12))
-                        Text("100% Local & Offline")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    Text("Zero cloud uploads. Everything processes privately on your Mac.")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+            Group {
+                switch selectedTab {
+                case .convert:
+                    ConvertWorkbenchView(droppedURLs: $droppedURLs)
+                case .tools:
+                    ToolsWorkbenchView(droppedURLs: $droppedURLs)
+                case .history:
+                    HistoryWorkbenchView()
+                case .settings:
+                    SettingsWorkbenchView()
                 }
-                .padding(12)
-                .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
-                .padding(.horizontal, 10)
-                .padding(.bottom, 14)
             }
-            .frame(minWidth: 200, maxWidth: 220)
-        } detail: {
-            switch selectedTab {
-            case .convert:
-                ConvertWorkbenchView(droppedURLs: $droppedURLs)
-            case .tools:
-                ToolsWorkbenchView(droppedURLs: $droppedURLs)
-            case .history:
-                HistoryWorkbenchView()
-            case .settings:
-                SettingsWorkbenchView()
-            }
+            .padding(.top, Self.titlebarInset - 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(Color(nsColor: .windowBackgroundColor))
         }
-        .frame(minWidth: 840, minHeight: 560)
+        .ignoresSafeArea()
+        .frame(minWidth: 860, minHeight: 560)
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Image(nsImage: BrandArtwork.image(size: 32))
+                    .resizable()
+                    .frame(width: 28, height: 28)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Swip")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("File converter for macOS")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, Self.titlebarInset)
+            .padding(.bottom, 20)
+
+            VStack(spacing: 0) {
+                ForEach(StudioTab.allCases) { tab in
+                    SidebarRow(
+                        title: tab.rawValue,
+                        symbol: tab.symbol,
+                        count: tab == .history && !jobRunner.jobs.isEmpty ? jobRunner.jobs.count : nil,
+                        selected: selectedTab == tab
+                    ) { selectedTab = tab }
+                }
+            }
+            .padding(.horizontal, 8)
+
+            Spacer()
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "lock")
+                    .font(.system(size: 12))
+                    .frame(width: 16)
+                Text("Everything runs on this Mac. Files are never uploaded.")
+                    .font(.system(size: 11))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+    }
+}
+
+/// Sidebar navigation row: the whole row is the hit target, hover and
+/// selection are small surface steps rather than colored fills.
+private struct SidebarRow: View {
+    let title: String
+    let symbol: String
+    let count: Int?
+    let selected: Bool
+    let action: () -> Void
+    @SwipState private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 14))
+                    .foregroundStyle(selected ? Theme.accent : Color.secondary)
+                    .frame(width: 18)
+                Text(title)
+                    .font(.system(size: 13, weight: selected ? .medium : .regular))
+                    .foregroundStyle(selected ? Color.primary : Color.primary.opacity(0.85))
+                Spacer(minLength: 8)
+                if let count {
+                    Text("\(count)")
+                        .font(.system(size: 11))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.primary.opacity(selected ? 0.08 : (hovering ? 0.04 : 0)))
+                    .padding(.vertical, 1)
+            }
+            .overlay {
+                if selected {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }
 
@@ -129,10 +183,10 @@ struct ConvertWorkbenchView: View {
             // Drop Zone Area
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(isTargeted ? Theme.accent.opacity(0.08) : Color.white.opacity(0.03))
+                    .fill(isTargeted ? Theme.accent.opacity(0.08) : Color.primary.opacity(0.03))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .strokeBorder(isTargeted ? Theme.accent : Color.white.opacity(0.12), style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: [6, 4]))
+                            .strokeBorder(isTargeted ? Theme.accent : Color.primary.opacity(0.12), style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: [6, 4]))
                     )
 
                 if droppedURLs.isEmpty {
@@ -141,9 +195,9 @@ struct ConvertWorkbenchView: View {
                             .font(.system(size: 40))
                             .foregroundStyle(Theme.accent.opacity(0.8))
                         VStack(spacing: 4) {
-                            Text("Drag & Drop Files Here")
-                                .font(.system(size: 16, weight: .bold))
-                            Text("Or hold Shift while dragging anywhere in Finder for zero-click conversions")
+                            Text("Drop files to convert")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Or hold ⇧ while dragging a file anywhere on your Mac")
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
@@ -189,7 +243,7 @@ struct ConvertWorkbenchView: View {
                                     }
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
-                                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -219,8 +273,8 @@ struct ConvertWorkbenchView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Choose Output Format")
-                            .font(.system(size: 14, weight: .bold))
+                        Text("Convert to")
+                            .font(.system(size: 13, weight: .semibold))
                         Spacer()
                         if let selectedTarget = selectedTarget {
                             Button("Convert All to \(selectedTarget.displayName)") {
@@ -233,7 +287,7 @@ struct ConvertWorkbenchView: View {
                     }
 
                     if targets.isEmpty {
-                        Text("No shared conversion target available for the selected formats.")
+                        Text("These files have no output format in common")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     } else {
@@ -242,23 +296,23 @@ struct ConvertWorkbenchView: View {
                                 Button(action: { selectedTarget = target }) {
                                     VStack(spacing: 6) {
                                         Image(systemName: target.category.symbol)
-                                            .font(.system(size: 20))
-                                            .foregroundStyle(selectedTarget == target ? .white : Theme.accent)
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(selectedTarget == target ? Theme.accent : Color.secondary)
                                         Text(target.displayName)
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                            .foregroundStyle(selectedTarget == target ? .white : .primary)
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundStyle(.primary)
                                     }
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
                                     .background(
                                         selectedTarget == target
-                                            ? AnyShapeStyle(Theme.accent)
-                                            : AnyShapeStyle(Color.white.opacity(0.05)),
-                                        in: RoundedRectangle(cornerRadius: 12)
+                                            ? AnyShapeStyle(Theme.accent.opacity(0.12))
+                                            : AnyShapeStyle(Color.primary.opacity(0.04)),
+                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     )
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .strokeBorder(selectedTarget == target ? Color.white.opacity(0.4) : Color.white.opacity(0.1), lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .strokeBorder(selectedTarget == target ? Theme.accent.opacity(0.7) : Color.primary.opacity(0.08), lineWidth: selectedTarget == target ? 1 : 0.5)
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -293,10 +347,16 @@ struct ToolsWorkbenchView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("26 Advanced File Tools")
-                .font(.system(size: 18, weight: .bold))
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Tools")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("\(ToolID.allCases.count)")
+                    .font(.system(size: 13))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
 
-            Text("Compress, crop, trim, split, merge, redact, frame, and optimize completely offline.")
+            Text("Compress, crop, trim, split, merge, redact and frame files without leaving your Mac")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
@@ -314,7 +374,7 @@ struct ToolsWorkbenchView: View {
                                 HStack {
                                     Image(systemName: tool.symbol)
                                         .font(.system(size: 18))
-                                        .foregroundStyle(Theme.accent)
+                                        .foregroundStyle(.secondary)
                                     Spacer()
                                 }
                                 Text(tool.title)
@@ -326,8 +386,8 @@ struct ToolsWorkbenchView: View {
                             }
                             .padding(14)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
+                            .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                     }
@@ -357,8 +417,8 @@ struct HistoryWorkbenchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Conversion History & Jobs")
-                    .font(.system(size: 18, weight: .bold))
+                Text("History")
+                    .font(.system(size: 18, weight: .semibold))
                 Spacer()
                 if !jobRunner.jobs.isEmpty {
                     Button("Clear Finished") {
@@ -388,7 +448,7 @@ struct HistoryWorkbenchView: View {
                     HStack(spacing: 12) {
                         Image(systemName: job.symbol)
                             .font(.system(size: 18))
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(.secondary)
                             .frame(width: 28)
 
                         VStack(alignment: .leading, spacing: 3) {
@@ -444,14 +504,43 @@ struct HistoryWorkbenchView: View {
     }
 }
 
+/// A color dot for the accent picker; the selected one gets a ring.
+private struct AccentSwatch: View {
+    let theme: AccentTheme
+    let selected: Bool
+    let action: () -> Void
+    @SwipState private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Circle()
+                .fill(Color(nsColor: Theme.accentNS(for: theme)))
+                .frame(width: 18, height: 18)
+                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+                .padding(3)
+                .overlay {
+                    Circle()
+                        .strokeBorder(selected ? Color(nsColor: Theme.accentNS(for: theme)) : Color.primary.opacity(hovering ? 0.2 : 0), lineWidth: 1.5)
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: selected)
+        .help(theme.title)
+        .accessibilityLabel(theme.title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
 // MARK: - Settings Workbench
 struct SettingsWorkbenchView: View {
     @ObservedObject var settings = AppSettings.shared
 
     var body: some View {
         Form {
-            Section("Output Location") {
-                Picker("Save converted files:", selection: $settings.outputLocation) {
+            Section("Output") {
+                Picker("Save converted files", selection: $settings.outputLocation) {
                     ForEach(OutputLocation.allCases) { loc in
                         Text(loc.title).tag(loc)
                     }
@@ -476,41 +565,51 @@ struct SettingsWorkbenchView: View {
                 }
             }
 
-            Section("Conversion Quality") {
-                HStack {
-                    Text("Image Compression Quality:")
-                    Slider(value: $settings.jpegQuality, in: 0.1...1.0, step: 0.05)
-                    Text("\(Int(settings.jpegQuality * 100))%")
-                        .frame(width: 40)
-                }
-            }
-
-            Section("Appearance & Accent") {
-                Picker("Accent Color:", selection: $settings.accentTheme) {
-                    ForEach(AccentTheme.allCases) { theme in
-                        Text(theme.title).tag(theme)
+            Section("Quality") {
+                LabeledContent("Image quality") {
+                    HStack(spacing: 12) {
+                        Slider(value: $settings.jpegQuality, in: 0.1...1.0, step: 0.05)
+                            .labelsHidden()
+                            .frame(maxWidth: 220)
+                        Text("\(Int(settings.jpegQuality * 100))%")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(width: 36, alignment: .trailing)
                     }
                 }
-                .pickerStyle(.segmented)
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Theme.accent)
-                        .frame(width: 12, height: 12)
-                    Text("Controls primary action buttons, tool highlights, and Swip accents.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 2)
             }
 
-            Section("Feedback & Gestures") {
-                Toggle("Play sound effects during drag & completion", isOn: $settings.soundEnabled)
-                Toggle("Haptic feedback on petal hover", isOn: $settings.hapticsEnabled)
-                Toggle("Launch Swip at login", isOn: $settings.launchAtLogin)
+            Section("Appearance") {
+                Picker("Theme", selection: $settings.appearance) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .pickerStyle(.segmented)
+                .fixedSize()
+                LabeledContent("Accent color") {
+                    HStack(spacing: 10) {
+                        ForEach(AccentTheme.allCases) { theme in
+                            AccentSwatch(theme: theme, selected: settings.accentTheme == theme) {
+                                settings.accentTheme = theme
+                            }
+                        }
+                        Text(settings.accentTheme.title)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 52, alignment: .leading)
+                    }
+                }
+            }
+
+            Section("General") {
+                Toggle("Sound effects", isOn: $settings.soundEnabled)
+                Toggle("Haptic feedback on the wheel", isOn: $settings.hapticsEnabled)
+                Toggle("Open at login", isOn: $settings.launchAtLogin)
+                    .disabled(!InstanceGuard.isInstalledCopy)
             }
         }
         .formStyle(.grouped)
-        .padding(20)
+        .scrollContentBackground(.hidden)
     }
 }
