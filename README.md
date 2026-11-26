@@ -42,16 +42,9 @@ Download the pre-compiled disk image from GitHub Releases:
 1. Open `Swip.dmg` and drag `Swip` to your `/Applications` shortcut.
 2. Launch `Swip` from Spotlight or Launchpad.
 
-> *First launch note: If macOS Gatekeeper displays an unverified developer prompt, right-click (Control-click) `Swip.app` &rarr; **Open**, or click **Open Anyway** under System Settings &rarr; Privacy & Security.*
+> *First launch note: Swip is not notarized yet, so macOS may block the first launch of the DMG or ZIP download. Open System Settings &rarr; Privacy & Security and click **Open Anyway** next to the Swip message (on macOS 14 you can also Control-click `Swip.app` &rarr; **Open**). The one-line installer above does not need this step.*
 
-### Method 3: Homebrew Cask
-
-```bash
-brew tap woadlab/tap
-brew install --cask swip
-```
-
-### Method 4: Build from Source
+### Method 3: Build from Source
 
 ```bash
 git clone https://github.com/Woadlab/swip.git
