@@ -83,11 +83,11 @@ struct RedactImageToolView: View {
                 Toggle("Show result", isOn: $showPreview)
             }
         }
-        .onChange(of: rects) { _ in relabel(); scheduleRender() }
-        .onChange(of: styles) { _ in scheduleRender() }
-        .onChange(of: color) { _ in scheduleRender() }
-        .onChange(of: defaultStyle) { _ in scheduleRender() }
-        .onChange(of: showPreview) { _ in scheduleRender() }
+        .onChange(of: rects) { relabel(); scheduleRender() }
+        .onChange(of: styles) { scheduleRender() }
+        .onChange(of: color) { scheduleRender() }
+        .onChange(of: defaultStyle) { scheduleRender() }
+        .onChange(of: showPreview) { scheduleRender() }
         .onDeleteCommand { if let selected { remove(selected) } }
     }
 

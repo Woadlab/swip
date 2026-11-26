@@ -111,9 +111,12 @@ enum AVExporter {
         writer.startSession(atSourceTime: start)
         let total = CMTimeGetSeconds(timeRange?.duration ?? duration)
 
+        // AVFoundation objects are confined to the serial writer queue below.
+        let pipe = PCMPipe(input: input, output: output, reader: reader, writer: writer)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let queue = DispatchQueue(label: "swip.pcm.writer")
-            input.requestMediaDataWhenReady(on: queue) {
+            pipe.input.requestMediaDataWhenReady(on: queue) {
+                let input = pipe.input, output = pipe.output, reader = pipe.reader, writer = pipe.writer
                 while input.isReadyForMoreMediaData {
                     if let sample = output.copyNextSampleBuffer() {
                         guard input.append(sample) else {
@@ -154,3 +157,10 @@ enum AVExporter {
     }
 }
 
+/// Hands the PCM writer's AVFoundation objects to its serial callback queue.
+private struct PCMPipe: @unchecked Sendable {
+    let input: AVAssetWriterInput
+    let output: AVAssetReaderAudioMixOutput
+    let reader: AVAssetReader
+    let writer: AVAssetWriter
+}

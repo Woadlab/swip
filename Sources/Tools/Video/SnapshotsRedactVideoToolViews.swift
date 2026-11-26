@@ -211,9 +211,9 @@ struct RedactVideoToolView: View {
                 }
             }
         }
-        .onChange(of: media.currentTime) { _ in loadFrame() }
-        .onChange(of: media.loaded) { if $0 { loadFrame() } }
-        .onChange(of: rects) { new in
+        .onChange(of: media.currentTime) { loadFrame() }
+        .onChange(of: media.loaded) { _, new in if new { loadFrame() } }
+        .onChange(of: rects) { _, new in
             for (index, overlay) in new.enumerated() {
                 if ranges[overlay.id] == nil { ranges[overlay.id] = 0...max(media.duration, 0.01) }
                 if rects[index].label != "\(index + 1)" { rects[index].label = "\(index + 1)" }

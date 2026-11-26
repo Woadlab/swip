@@ -73,18 +73,18 @@ struct FrameImageToolView: View {
                 LabeledSlider(title: "Shadow", value: $shadow, range: 0...120) { String(format: "%.0f", $0) }
             }
         }
-        .onChange(of: document.preview) { _ in scheduleRender() }
-        .onChange(of: backgroundKind) { _ in scheduleRender() }
-        .onChange(of: color) { _ in scheduleRender() }
-        .onChange(of: gradientA) { _ in scheduleRender() }
-        .onChange(of: gradientB) { _ in scheduleRender() }
-        .onChange(of: gradientAngle) { _ in scheduleRender() }
-        .onChange(of: backgroundBlur) { _ in scheduleRender() }
-        .onChange(of: aspect) { _ in scheduleRender() }
-        .onChange(of: padding) { _ in scheduleRender() }
-        .onChange(of: corner) { _ in scheduleRender() }
-        .onChange(of: shadow) { _ in scheduleRender() }
-        .onChange(of: backgroundImageURL) { _ in scheduleRender() }
+        .onChange(of: document.preview) { scheduleRender() }
+        .onChange(of: backgroundKind) { scheduleRender() }
+        .onChange(of: color) { scheduleRender() }
+        .onChange(of: gradientA) { scheduleRender() }
+        .onChange(of: gradientB) { scheduleRender() }
+        .onChange(of: gradientAngle) { scheduleRender() }
+        .onChange(of: backgroundBlur) { scheduleRender() }
+        .onChange(of: aspect) { scheduleRender() }
+        .onChange(of: padding) { scheduleRender() }
+        .onChange(of: corner) { scheduleRender() }
+        .onChange(of: shadow) { scheduleRender() }
+        .onChange(of: backgroundImageURL) { scheduleRender() }
     }
 
     private func options(scale: CGFloat, source: CGImage) -> ImageOps.FrameOptions {

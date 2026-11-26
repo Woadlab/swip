@@ -64,8 +64,8 @@ struct EditImageToolView: View {
             Button("Reset all") { adjustments = PhotoAdjustments() }
                 .buttonStyle(.link)
         }
-        .onChange(of: adjustments) { _ in scheduleRender() }
-        .onChange(of: document.preview) { _ in scheduleRender() }
+        .onChange(of: adjustments) { scheduleRender() }
+        .onChange(of: document.preview) { scheduleRender() }
     }
 
     private func scheduleRender() {

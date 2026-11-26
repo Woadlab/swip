@@ -61,8 +61,8 @@ struct CropVideoToolView: View {
                 Text("Audio is kept as is. Output is MP4 (H.264).").font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .onChange(of: media.currentTime) { _ in loadFrame() }
-        .onChange(of: media.loaded) { loaded in
+        .onChange(of: media.currentTime) { loadFrame() }
+        .onChange(of: media.loaded) { _, loaded in
             guard loaded else { return }
             loadFrame()
             let inset = CGRect(origin: .zero, size: videoSize).insetBy(dx: videoSize.width * 0.1, dy: videoSize.height * 0.1)
@@ -70,10 +70,10 @@ struct CropVideoToolView: View {
             rects = [RectangleOverlay(id: id, rect: inset.integral, color: Theme.accent, label: "")]
             selected = id
         }
-        .onChange(of: rects) { new in
+        .onChange(of: rects) { _, new in
             if keepSize, let rect = new.first?.rect { outWidth = Int(rect.width); outHeight = Int(rect.height) }
         }
-        .onChange(of: aspect) { _ in
+        .onChange(of: aspect) {
             guard let ratio = aspectRatio, let rect = cropRect else { return }
             var new = rect
             new.size.height = rect.width / ratio

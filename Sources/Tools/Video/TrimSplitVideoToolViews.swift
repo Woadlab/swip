@@ -37,9 +37,9 @@ struct TrimVideoToolView: View {
                 Text("The selection is copied without re-encoding when the format allows it, so the trim is fast and lossless.").font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .onChange(of: media.duration) { duration in if end == 0 { end = duration } }
-        .onChange(of: start) { new in if abs(media.currentTime - new) > 0.01 { media.seek(new) } }
-        .onChange(of: end) { new in media.seek(new) }
+        .onChange(of: media.duration) { _, duration in if end == 0 { end = duration } }
+        .onChange(of: start) { _, new in if abs(media.currentTime - new) > 0.01 { media.seek(new) } }
+        .onChange(of: end) { _, new in media.seek(new) }
         .background(KeyCaptureView { key in
             switch key {
             case .left: media.stepFrame(-1)
@@ -124,7 +124,7 @@ struct SplitVideoToolView: View {
                 Text("All clips are placed in one folder next to the original, numbered in order. Clips are copied without re-encoding when possible.").font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .onChange(of: media.duration) { unusedEnd = $0 }
+        .onChange(of: media.duration) { _, new in unusedEnd = new }
     }
 
     private func save() {

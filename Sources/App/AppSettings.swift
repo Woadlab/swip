@@ -24,10 +24,10 @@ public enum AccentTheme: String, CaseIterable, Identifiable {
     public var id: String { rawValue }
     public var title: String {
         switch self {
-        case .pastelIndigo: return "Pastel Indigo (Default)"
-        case .pastelMint: return "Pastel Mint"
-        case .pastelRose: return "Pastel Rose"
-        case .system: return "macOS Accent"
+        case .pastelIndigo: return "Indigo"
+        case .pastelMint: return "Mint"
+        case .pastelRose: return "Rose"
+        case .system: return "System"
         }
     }
 }
@@ -116,9 +116,11 @@ public final class AppSettings: ObservableObject {
     @Published public var launchAtLogin: Bool {
         didSet {
             defaults.set(launchAtLogin, forKey: "launchAtLogin")
-            updateLoginItem()
+            if !isSyncingLoginItem { updateLoginItem() }
         }
     }
+
+    private var isSyncingLoginItem = false
 
     @Published public var excludedApplications: [String: String] {
         didSet { defaults.set(excludedApplications, forKey: "excludedApplications") }
@@ -165,17 +167,33 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// Mirrors the real login-item state from the system (the user can change it
+    /// in System Settings › General › Login Items) without re-registering.
+    public func syncLoginItemFromSystem() {
+        guard InstanceGuard.isInstalledCopy else { return }
+        let status = SMAppService.mainApp.status
+        let enabled = status == .enabled || status == .requiresApproval
+        guard enabled != launchAtLogin else { return }
+        isSyncingLoginItem = true
+        launchAtLogin = enabled
+        isSyncingLoginItem = false
+    }
+
     private func updateLoginItem() {
-        if #available(macOS 13.0, *) {
-            do {
-                if launchAtLogin {
-                    try SMAppService.mainApp.register()
-                } else {
-                    try SMAppService.mainApp.unregister()
-                }
-            } catch {
-                DiagnosticLog.log("Login item update error: \(error)")
+        // Only an installed copy may register itself. A development build in
+        // dist/ registering too is what made two Swips start at every login.
+        guard InstanceGuard.isInstalledCopy else {
+            DiagnosticLog.log("Login item: skipped, \(Bundle.main.bundlePath) is not an installed copy")
+            return
+        }
+        do {
+            if launchAtLogin {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
             }
+        } catch {
+            DiagnosticLog.log("Login item update error: \(error)")
         }
     }
 }

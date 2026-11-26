@@ -359,10 +359,10 @@ struct TimecodeField: View {
                 .font(.body.monospacedDigit())
                 .focused($focused)
                 .onSubmit(commit)
-                .onChange(of: focused) { isFocused in if !isFocused { commit() } }
+                .onChange(of: focused) { _, isFocused in if !isFocused { commit() } }
         }
         .onAppear { text = TimeFormatter.clock(seconds) }
-        .onChange(of: seconds) { newValue in if !focused { text = TimeFormatter.clock(newValue) } }
+        .onChange(of: seconds) { _, newValue in if !focused { text = TimeFormatter.clock(newValue) } }
     }
 
     private func commit() {

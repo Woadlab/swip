@@ -50,7 +50,7 @@ struct TrimAudioToolView: View {
             }
         }
         .onAppear { media.loadWaveform() }
-        .onChange(of: media.duration) { duration in if end == 0 { end = duration } }
+        .onChange(of: media.duration) { _, duration in if end == 0 { end = duration } }
         .task { silence = await AudioOps.detectSilence(session.primary) }
     }
 
@@ -223,14 +223,22 @@ struct AudioChannelsToolView: View {
             }
         }
         .onAppear { media.loadWaveform() }
-        .onChange(of: previewChannel) { channel in applyPreview(channel) }
-        .onChange(of: left) { _ in applyPreview(previewChannel) }
-        .onChange(of: right) { _ in applyPreview(previewChannel) }
-        .onChange(of: media.loaded) { _ in applyPreview(previewChannel) }
+        .onChange(of: previewChannel) { _, channel in applyPreview(channel) }
+        .onChange(of: left) { applyPreview(previewChannel) }
+        .onChange(of: right) { applyPreview(previewChannel) }
+        .onChange(of: media.loaded) { applyPreview(previewChannel) }
     }
 
     private func applyPreview(_ channel: PreviewChannel) {
-        guard let item = media.player.currentItem, let track = item.asset.tracks(withMediaType: .audio).first else { return }
+        guard let item = media.player.currentItem else { return }
+        let left = left, right = right
+        Task { @MainActor in
+            guard let track = try? await item.asset.loadTracks(withMediaType: .audio).first else { return }
+            applyMix(channel, item: item, track: track, left: left, right: right)
+        }
+    }
+
+    private func applyMix(_ channel: PreviewChannel, item: AVPlayerItem, track: AVAssetTrack, left: Double, right: Double) {
         let params = AVMutableAudioMixInputParameters(track: track)
         let mix = AVMutableAudioMix()
         switch channel {

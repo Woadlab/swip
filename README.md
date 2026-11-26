@@ -42,16 +42,9 @@ Download the pre-compiled disk image from GitHub Releases:
 1. Open `Swip.dmg` and drag `Swip` to your `/Applications` shortcut.
 2. Launch `Swip` from Spotlight or Launchpad.
 
-> *First launch note: If macOS Gatekeeper displays an unverified developer prompt, right-click (Control-click) `Swip.app` &rarr; **Open**, or click **Open Anyway** under System Settings &rarr; Privacy & Security.*
+> *First launch note: Swip is not notarized yet, so macOS may block the first launch of the DMG or ZIP download. Open System Settings &rarr; Privacy & Security and click **Open Anyway** next to the Swip message (on macOS 14 you can also Control-click `Swip.app` &rarr; **Open**). The one-line installer above does not need this step.*
 
-### Method 3: Homebrew Cask
-
-```bash
-brew tap woadlab/tap
-brew install --cask swip
-```
-
-### Method 4: Build from Source
+### Method 3: Build from Source
 
 ```bash
 git clone https://github.com/Woadlab/swip.git
@@ -71,7 +64,7 @@ Swip runs as a lightweight, non-activating status bar utility that monitors glob
 | **`⇧ Shift` + Drag** | **Instant Convert** | Spawns an 8-petal radial wheel tailored to the dragged file's type (e.g. dragging a `.heic` presents WebP, PNG, JPEG, AVIF, TIFF, PDF). Release over a petal to convert. |
 | **`⌘ Command` + Drag** | **Pro Tools** | Opens fast utility tools for the target file (Lossless Trim, Redaction brush, Canvas framing, Loudness normalizer, PDF joiner). |
 | **`⌃ Control` + Drag** | **File Actions** | Quick triage operations: Reveal in Finder, Quick Look preview, Move to Trash, or pin to the Floating Shelf. |
-| **Drop on Menu Bar** | **Queue & Batch** | Stashes items into the batch processing queue for bulk format transformations. |
+| **Drop on Menu Bar** | **Queue & Batch** | Stashes items into the batch processing queue for bulk format transformations. Clicking the menu bar icon opens the Menu Bar Panel, which shows live job state. |
 
 > *Tip: You can press the modifier either **before** dragging or **while actively dragging** a file.*
 
@@ -85,6 +78,7 @@ Swip runs as a lightweight, non-activating status bar utility that monitors glob
 - **26 Pro Media Tools**: Complete offline toolset for trimming, cropping, frame extraction, canvas framing, redaction, loudness normalization, PDF manipulation, and deep metadata editing.
 - **Hardware Accelerated & 100% Native**: Built on Apple Silicon Accelerate, `vImage`, `ImageIO`, `AVFoundation`, and `CoreGraphics` for sub-second offline processing, with seamless integration for system FFmpeg when available.
 - **Swip Studio & Floating Shelf**: Dedicated utility window for batch processing, format inspection, and an edge-docked shelf for staging files across multi-monitor setups.
+- **Menu Bar Panel & Single Instance**: A compact menu bar panel with live job state and quick actions. Only one Swip runs per session, and an installed copy in `/Applications` takes precedence over a development build.
 - **Calibrated macOS Aesthetic**: Frosted glass HUD with dynamic theme accents (Pastel Indigo default, Pastel Mint, Pastel Rose, or System Accent).
 
 ---
@@ -172,14 +166,14 @@ When holding `⌘ Command` while dragging, Swip opens dedicated, non-modal works
 
 ```
 Sources/
-├── App/          # Application lifecycle, AppSettings, FloatingShelfController
+├── App/          # Application lifecycle, AppSettings, FloatingShelfController, InstanceGuard
 ├── Core/         # JobRunner, MediaInfo, SoundManager, DiagnosticLog, Shell execution
 ├── Engines/      # Hardware conversion engines (ImageEngine, VideoEngine, AVExporter, FFmpeg)
 ├── Formats/      # FileFormat definitions, UTI mapping, ConversionMatrix
 ├── Operations/   # High-level operations for Image, Video, Audio, PDF, Compressor, Metadata
 ├── Radial/       # Non-activating NSPanel HUD, RadialGeometry bezier layout, DragMonitor
 ├── Tools/        # 26 SwiftUI tool views (Shared MediaPlayer, ImageCanvas, ToolWindowManager)
-└── UI/           # SwipStudioView, GlassSurface, Theme tokens, BrandArtwork vector mark
+└── UI/           # SwipStudioView, MenuBarPanel, GlassSurface, Theme tokens, BrandArtwork vector mark
 ```
 
 - **Zero Focus Theft**: Built using an `NSPanel` with `.nonactivatingPanel` and custom window levels, ensuring that dragging never steals focus from Finder, Xcode, Photoshop, or your browser.
